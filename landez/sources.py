@@ -4,6 +4,7 @@ import zlib
 import sqlite3
 import logging
 import json
+import random
 from gettext import gettext as _
 from pkg_resources import parse_version
 import requests
@@ -167,7 +168,8 @@ class TileDownloader(TileSource):
         logger.debug(_("Download tile %s") % ((z, x, y),))
         # Render each keyword in URL ({s}, {x}, {y}, {z}, {size} ... )
         size = self.tilesize
-        s = self.tiles_subdomains[(x + y) % len(self.tiles_subdomains)];
+        #s = self.tiles_subdomains[(x + y) % len(self.tiles_subdomains)]
+        s = self.tiles_subdomains[random.randint(0, len(self.tiles_subdomains)-1)]
         try:
             url = self.tiles_url.format(**locals())
         except KeyError as e:
@@ -182,8 +184,18 @@ class TileDownloader(TileSource):
                 if request.status_code == 200:
                     return request.content
                 raise DownloadError(_("Status code : %s, url : %s") % (request.status_code, url))
+            except DownloadError as e:
+                print(_("Status code error, retry (%s left). (%s)") % (r, e))
+                s = self.tiles_subdomains[random.randint(0, len(self.tiles_subdomains)-1)]
+                url = self.tiles_url.format(**locals())
+                print(_("url: %s") % (url))
+                r -= 1
+                time.sleep(sleeptime)
+                # progressivly sleep longer to wait for this tile
+                if (sleeptime <= 10) and (r % 2 == 0):
+                    sleeptime += 1  # increase wait
             except requests.exceptions.ConnectionError as e:
-                logger.debug(_("Download error, retry (%s left). (%s)") % (r, e))
+                logger.warning(_("Download error, retry (%s left). (%s)") % (r, e))
                 r -= 1
                 time.sleep(sleeptime)
                 # progressivly sleep longer to wait for this tile

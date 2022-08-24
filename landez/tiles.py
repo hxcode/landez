@@ -248,6 +248,7 @@ class MBTilesBuilder(TilesManager):
         self.tmp_dir = kwargs.get('tmp_dir', DEFAULT_TMP_DIR)
         self.tmp_dir = os.path.join(self.tmp_dir, basename)
         self.tile_format = kwargs.get('tile_format', DEFAULT_TILE_FORMAT)
+        self.start_index=kwargs.get('start_index', 0)
 
         # Number of tiles in total
         self.nbtiles = 0
@@ -320,8 +321,10 @@ class MBTilesBuilder(TilesManager):
 
         # Go through whole list of tiles and gather them in tmp_dir
         self.rendered = 0
-        for (z, x, y) in tileslist:
+        for idx,(z, x, y) in enumerate(tileslist, start=self.start_index):
             try:
+                print("idx:",idx)
+                print("(z, x, y):",(z, x, y))
                 self._gather((z, x, y))
             except Exception as e:
                 logger.warn(e)
